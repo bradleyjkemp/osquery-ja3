@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/bradleyjkemp/osquery-ja3/ja3assembler"
 	"github.com/google/gopacket"
@@ -19,14 +20,14 @@ func main() {
 	//	log.Fatalf("Error creating extension: %s\n", err)
 	//}
 
-	//ifaces, err := net.Interfaces()
-	//if err != nil {
-	//	log.Fatalf("Failed to get network interfaces: %v", err)
-	//}
-	//for _, iface := range ifaces {
-	logJA3Hashes("en0")
-	//}
-	//select {}
+	ifaces, err := pcap.FindAllDevs()
+	if err != nil {
+		log.Fatalf("Failed to get network interfaces: %v", err)
+	}
+	for _, iface := range ifaces {
+		go logJA3Hashes(iface.Name)
+	}
+	select {}
 
 	//// Create and register a new table plugin with the server.
 	//// table.NewPlugin requires the table plugin name,
