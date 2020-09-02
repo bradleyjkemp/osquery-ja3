@@ -31,14 +31,16 @@ const timeout = 5 * time.Minute
 // created with 'a' set to the new stream.  If we DO have an opposite stream,
 // 'b' is set to the new stream.
 type bidirectionalStream struct {
-	key            key                   // Key of the first stream, mostly for logging.
-	a, b           *unidirectionalStream // the two unidirectional streams.
-	lastPacketSeen time.Time             // last time we saw a packet from either stream.
+	key            key                         // Key of the first stream, mostly for logging.
+	a, b           *unidirectionalStream       // the two unidirectional streams.
+	lastPacketSeen time.Time                   // last time we saw a packet from either stream.
+	callback       func(ja3, ja3s, sni string) // called when both directions have finished parsing their handshake
 }
 
 // myFactory implements tcpassembly.StreamFactory
 type assembler struct {
 	sync.Mutex
+	callback func(ja3, ja3s, sni string)
 	// unmatchedStreams allows us to look upmaps keys to bidirectional stream pairs.
 	unmatchedStreams map[key]*bidirectionalStream
 }
@@ -57,7 +59,7 @@ func (f *assembler) New(netFlow, tcpFlow gopacket.Flow) tcpassembly.Stream {
 	k := key{netFlow, tcpFlow}
 	bd := f.unmatchedStreams[k]
 	if bd == nil {
-		bd = &bidirectionalStream{a: s, key: k}
+		bd = &bidirectionalStream{a: s, key: k, callback: f.callback}
 		// Register bidirectional with the reverse key, so the matching stream going
 		// the other direction will find it.
 		f.unmatchedStreams[key{netFlow.Reverse(), tcpFlow.Reverse()}] = bd
@@ -127,5 +129,5 @@ func (bd *bidirectionalStream) maybeFinish() {
 		return
 	}
 
-	fmt.Printf("%s -> %s [%s]\n", ja3, ja3s, sni)
+	bd.callback(ja3, ja3s, sni)
 }

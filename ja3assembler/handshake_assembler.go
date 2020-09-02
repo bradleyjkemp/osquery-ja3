@@ -172,6 +172,11 @@ func (s *unidirectionalStream) completeProcessing(success bool, reason string, a
 }
 
 //Assembler handles reassembling TCP streams.
-func NewAssembler() *tcpassembly.Assembler {
-	return tcpassembly.NewAssembler(tcpassembly.NewStreamPool(&assembler{unmatchedStreams: map[key]*bidirectionalStream{}}))
+func NewAssembler(callback func(ja3, ja3s, sni string)) *tcpassembly.Assembler {
+	return tcpassembly.NewAssembler(
+		tcpassembly.NewStreamPool(
+			&assembler{
+				callback:         callback,
+				unmatchedStreams: map[key]*bidirectionalStream{},
+			}))
 }
